@@ -13,10 +13,17 @@ class Task:
     deadline: Optional[datetime]
     status: str
     created_at: datetime
+    priority: str = "medium"
+    category: Optional[str] = None
+    repeat_type: Optional[str] = None
+    repeat_days: Optional[str] = None
 
 class Database:
     def __init__(self):
-        self.conn = psycopg2.connect(os.getenv("DATABASE_URL"), sslmode="require")
+        url = os.getenv("DATABASE_URL", "")
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql://", 1)
+        self.conn = psycopg2.connect(url, sslmode="require")
         self.conn.autocommit = True
         self._create_tables()
 
@@ -24,12 +31,16 @@ class Database:
         with self.conn.cursor() as cur:
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS tasks (
-                    id         SERIAL PRIMARY KEY,
-                    user_id    BIGINT   NOT NULL,
-                    text       TEXT     NOT NULL,
-                    deadline   TIMESTAMP DEFAULT NULL,
-                    status     TEXT     NOT NULL DEFAULT 'active',
-                    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+                    id          SERIAL PRIMARY KEY,
+                    user_id     BIGINT    NOT NULL,
+                    text        TEXT      NOT NULL,
+                    deadline    TIMESTAMP DEFAULT NULL,
+                    status      TEXT      NOT NULL DEFAULT 'active',
+                    created_at  TIMESTAMP NOT NULL DEFAULT NOW(),
+                    priority    TEXT      NOT NULL DEFAULT 'medium',
+                    category    TEXT      DEFAULT NULL,
+                    repeat_type TEXT      DEFAULT NULL,
+                    repeat_days TEXT      DEFAULT NULL
                 );
                 CREATE INDEX IF NOT EXISTS idx_tasks_user ON tasks(user_id);
 
@@ -37,6 +48,16 @@ class Database:
                     task_id INTEGER NOT NULL PRIMARY KEY,
                     sent_at TIMESTAMP NOT NULL DEFAULT NOW()
                 );
+
+                CREATE TABLE IF NOT EXISTS user_settings (
+                    user_id  BIGINT PRIMARY KEY,
+                    language TEXT NOT NULL DEFAULT 'uk'
+                );
+
+                ALTER TABLE tasks ADD COLUMN IF NOT EXISTS priority TEXT NOT NULL DEFAULT 'medium';
+                ALTER TABLE tasks ADD COLUMN IF NOT EXISTS category TEXT DEFAULT NULL;
+                ALTER TABLE tasks ADD COLUMN IF NOT EXISTS repeat_type TEXT DEFAULT NULL;
+                ALTER TABLE tasks ADD COLUMN IF NOT EXISTS repeat_days TEXT DEFAULT NULL;
             """)
 
     def _row_to_task(self, row) -> Task:
@@ -47,36 +68,66 @@ class Database:
             deadline=row[3],
             status=row[4],
             created_at=row[5],
+            priority=row[6] if len(row) > 6 else "medium",
+            category=row[7] if len(row) > 7 else None,
+            repeat_type=row[8] if len(row) > 8 else None,
+            repeat_days=row[9] if len(row) > 9 else None,
         )
 
-    def add_task(self, user_id: int, text: str, deadline: Optional[datetime] = None) -> int:
+    def get_language(self, user_id: int) -> str:
+        with self.conn.cursor() as cur:
+            cur.execute("SELECT language FROM user_settings WHERE user_id=%s", (user_id,))
+            row = cur.fetchone()
+            return row[0] if row else "uk"
+
+    def set_language(self, user_id: int, lang: str):
+        with self.conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO user_settings (user_id, language) VALUES (%s, %s)
+                ON CONFLICT (user_id) DO UPDATE SET language = EXCLUDED.language
+            """, (user_id, lang))
+
+    def add_task(self, user_id: int, text: str, deadline: Optional[datetime] = None,
+                 priority: str = "medium", category: Optional[str] = None,
+                 repeat_type: Optional[str] = None, repeat_days: Optional[str] = None) -> int:
         with self.conn.cursor() as cur:
             cur.execute(
-                "INSERT INTO tasks (user_id, text, deadline) VALUES (%s, %s, %s) RETURNING id",
-                (user_id, text, deadline),
+                """INSERT INTO tasks (user_id, text, deadline, priority, category, repeat_type, repeat_days)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING id""",
+                (user_id, text, deadline, priority, category, repeat_type, repeat_days),
             )
             return cur.fetchone()[0]
 
-    def get_tasks(self, user_id: int, status: str = "active") -> List[Task]:
+    def get_tasks(self, user_id: int, status: str = "active",
+                  category: Optional[str] = None) -> List[Task]:
         with self.conn.cursor() as cur:
             if status == "all":
-                cur.execute(
-                    "SELECT * FROM tasks WHERE user_id=%s ORDER BY deadline NULLS LAST, id",
-                    (user_id,),
-                )
+                if category:
+                    cur.execute(
+                        "SELECT * FROM tasks WHERE user_id=%s AND category=%s ORDER BY priority DESC, deadline NULLS LAST",
+                        (user_id, category),
+                    )
+                else:
+                    cur.execute(
+                        "SELECT * FROM tasks WHERE user_id=%s ORDER BY priority DESC, deadline NULLS LAST",
+                        (user_id,),
+                    )
             else:
-                cur.execute(
-                    "SELECT * FROM tasks WHERE user_id=%s AND status=%s ORDER BY deadline NULLS LAST, id",
-                    (user_id, status),
-                )
+                if category:
+                    cur.execute(
+                        "SELECT * FROM tasks WHERE user_id=%s AND status=%s AND category=%s ORDER BY priority DESC, deadline NULLS LAST",
+                        (user_id, status, category),
+                    )
+                else:
+                    cur.execute(
+                        "SELECT * FROM tasks WHERE user_id=%s AND status=%s ORDER BY priority DESC, deadline NULLS LAST",
+                        (user_id, status),
+                    )
             return [self._row_to_task(r) for r in cur.fetchall()]
 
     def get_task(self, user_id: int, task_id: int) -> Optional[Task]:
         with self.conn.cursor() as cur:
-            cur.execute(
-                "SELECT * FROM tasks WHERE id=%s AND user_id=%s",
-                (task_id, user_id),
-            )
+            cur.execute("SELECT * FROM tasks WHERE id=%s AND user_id=%s", (task_id, user_id))
             row = cur.fetchone()
             return self._row_to_task(row) if row else None
 
@@ -90,11 +141,23 @@ class Database:
 
     def delete_task(self, user_id: int, task_id: int) -> bool:
         with self.conn.cursor() as cur:
-            cur.execute(
-                "DELETE FROM tasks WHERE id=%s AND user_id=%s",
-                (task_id, user_id),
-            )
+            cur.execute("DELETE FROM tasks WHERE id=%s AND user_id=%s", (task_id, user_id))
             return cur.rowcount > 0
+
+    def get_stats(self, user_id: int) -> dict:
+        with self.conn.cursor() as cur:
+            cur.execute("""
+                SELECT
+                    COUNT(*) FILTER (WHERE status='done') as done,
+                    COUNT(*) FILTER (WHERE status='active') as active,
+                    COUNT(*) FILTER (WHERE status='overdue') as overdue,
+                    COUNT(*) as total
+                FROM tasks WHERE user_id=%s
+            """, (user_id,))
+            row = cur.fetchone()
+            done, active, overdue, total = row
+            percent = round((done / total * 100) if total > 0 else 0)
+            return {"done": done, "active": active, "overdue": overdue, "total": total, "percent": percent}
 
     def get_upcoming_tasks(self, from_dt: datetime, to_dt: datetime) -> List[Task]:
         with self.conn.cursor() as cur:
@@ -107,6 +170,20 @@ class Database:
                 (from_dt, to_dt),
             )
             return [self._row_to_task(r) for r in cur.fetchall()]
+
+    def get_repeating_tasks(self) -> List[Task]:
+        with self.conn.cursor() as cur:
+            cur.execute(
+                "SELECT * FROM tasks WHERE status='done' AND repeat_type IS NOT NULL"
+            )
+            return [self._row_to_task(r) for r in cur.fetchall()]
+
+    def reset_repeating_task(self, task_id: int, new_deadline: datetime):
+        with self.conn.cursor() as cur:
+            cur.execute(
+                "UPDATE tasks SET status='active', deadline=%s WHERE id=%s",
+                (new_deadline, task_id),
+            )
 
     def log_reminder(self, task_id: int):
         with self.conn.cursor() as cur:

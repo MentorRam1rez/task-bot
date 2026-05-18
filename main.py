@@ -1,18 +1,16 @@
 import logging
 from telegram.ext import (
-    Application,
-    CommandHandler,
-    ConversationHandler,
-    MessageHandler,
-    CallbackQueryHandler,
-    filters,
+    Application, CommandHandler, ConversationHandler,
+    MessageHandler, CallbackQueryHandler, filters,
 )
 from config import BOT_TOKEN
 from database import Database
 from handlers import (
-    start_command, add_command, get_text, get_deadline, cancel_command,
-    list_command, done_command, delete_command, remind_command, button_callback,
-    TEXT, DEADLINE,
+    start_command, add_command, get_text, get_deadline,
+    get_priority, get_category, get_repeat, get_repeat_days,
+    cancel_command, list_command, done_command, delete_command,
+    remind_command, stats_command, lang_command, button_callback,
+    TEXT, DEADLINE, PRIORITY, CATEGORY, REPEAT, REPEAT_DAYS,
 )
 from scheduler import setup_scheduler
 
@@ -24,7 +22,6 @@ logging.basicConfig(
 
 def main():
     db = Database()
-
     app = Application.builder().token(BOT_TOKEN).build()
 
     conv = ConversationHandler(
@@ -35,11 +32,17 @@ def main():
                 MessageHandler(filters.TEXT & ~filters.COMMAND, get_deadline),
                 CommandHandler("skip", get_deadline),
             ],
+            PRIORITY: [CallbackQueryHandler(get_priority, pattern="^priority_")],
+            CATEGORY: [CallbackQueryHandler(get_category, pattern="^cat_")],
+            REPEAT: [CallbackQueryHandler(get_repeat, pattern="^repeat_")],
+            REPEAT_DAYS: [CallbackQueryHandler(get_repeat_days, pattern="^(day_|days_confirm)")],
         },
         fallbacks=[CommandHandler("cancel", cancel_command)],
     )
 
     app.add_handler(CommandHandler("start", start_command))
+    app.add_handler(CommandHandler("lang", lang_command))
+    app.add_handler(CommandHandler("stats", stats_command))
     app.add_handler(conv)
     app.add_handler(CommandHandler("list", list_command))
     app.add_handler(CommandHandler("done", done_command))
