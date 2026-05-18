@@ -17,8 +17,7 @@ CATEGORY_ICON = {"work": "💼", "study": "📚", "personal": "🏠", None: "�
 def lang(user_id: int) -> str:
     return db.get_language(user_id)
 
-
-# ── /start ───────────────────────────────────────────────────────────────────
+#/start
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -28,13 +27,12 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown",
     )
 
-# ── /help ───────────────────────────────────────────────────────────────────
+#/help
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     l = lang(update.effective_user.id)
     await update.message.reply_text(t(l, "help_title"), parse_mode="Markdown")
-
-# ── /lang ────────────────────────────────────────────────────────────────────
+#/lang
 
 async def lang_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     l = lang(update.effective_user.id)
@@ -46,8 +44,7 @@ async def lang_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ])
     await update.message.reply_text(t(l, "choose_lang"), reply_markup=keyboard)
 
-
-# ── /add ─────────────────────────────────────────────────────────────────────
+#/add
 
 async def add_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     l = lang(update.effective_user.id)
@@ -223,8 +220,7 @@ async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     await update.message.reply_text(t(l, "cancelled"))
     return ConversationHandler.END
 
-
-# ── /list ────────────────────────────────────────────────────────────────────
+#/list
 
 async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -269,8 +265,7 @@ async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown",
     )
 
-
-# ── /done ────────────────────────────────────────────────────────────────────
+#/done
 
 async def done_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -284,8 +279,7 @@ async def done_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text(t(l, "task_already_done"))
 
-
-# ── /delete ──────────────────────────────────────────────────────────────────
+#/delete
 
 async def delete_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -299,8 +293,7 @@ async def delete_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text(t(l, "task_not_found"))
 
-
-# ── /remind ──────────────────────────────────────────────────────────────────
+#/remind
 
 async def remind_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -315,8 +308,7 @@ async def remind_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
     await update.message.reply_text("\n\n".join(lines), parse_mode="Markdown")
 
-
-# ── /stats ───────────────────────────────────────────────────────────────────
+#/stats
 
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -327,8 +319,7 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown",
     )
 
-
-# ── Callback ─────────────────────────────────────────────────────────────────
+#Callback
 
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
