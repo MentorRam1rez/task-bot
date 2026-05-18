@@ -1,9 +1,10 @@
 from datetime import datetime
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes, ConversationHandler
-
+import pytz
 from database import Database
 from language import t
+
 
 db = Database()
 
@@ -187,6 +188,9 @@ async def get_repeat_days(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 async def _save_task(query, context, l: str) -> int:
     user_id = query.from_user.id
     deadline = context.user_data.get("deadline")
+    if deadline:
+        tz = pytz.timezone("Europe/Kyiv")
+        deadline = tz.localize(deadline).astimezone(pytz.utc)
     priority = context.user_data.get("priority", "medium")
     category = context.user_data.get("category")
     repeat_type = context.user_data.get("repeat_type")
