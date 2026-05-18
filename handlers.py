@@ -28,6 +28,11 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown",
     )
 
+# ── /help ───────────────────────────────────────────────────────────────────
+
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    l = lang(update.effective_user.id)
+    await update.message.reply_text(t(l, "help_title"), parse_mode="Markdown")
 
 # ── /lang ────────────────────────────────────────────────────────────────────
 
@@ -225,14 +230,18 @@ async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     l = lang(user_id)
     filter_arg = context.args[0] if context.args else "active"
-    category_filter = context.args[1] if len(context.args) > 1 else None
 
-    valid = {"active", "done", "overdue", "all"}
-    if filter_arg not in valid:
+    valid_status = {"active", "done", "overdue", "all"}
+    valid_priority = {"high", "medium", "low"}
+
+    if filter_arg in valid_priority:
+        tasks = db.get_tasks_by_priority(user_id, priority=filter_arg)
+    elif filter_arg in valid_status:
+        tasks = db.get_tasks(user_id, status=filter_arg)
+    else:
         await update.message.reply_text(t(l, "filter_hint"))
         return
 
-    tasks = db.get_tasks(user_id, status=filter_arg, category=category_filter)
     if not tasks:
         await update.message.reply_text(t(l, "no_tasks"))
         return
@@ -244,7 +253,9 @@ async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         category_icon = CATEGORY_ICON.get(task.category, "📌")
         dl = task.deadline.strftime("%d.%m %H:%M") if task.deadline else "—"
         repeat = " 🔄" if task.repeat_type else ""
-        lines.append(f"{status_icon}{priority_icon}{category_icon} *#{task.id}* {task.text}{repeat}\n   ⏰ {dl}")
+        lines.append(
+            f"{status_icon}{priority_icon}{category_icon} *#{task.id}* {task.text}{repeat}\n   ⏰ {dl}"
+        )
 
     keyboard = [
         [InlineKeyboardButton(t(l, "done_btn", id=task.id), callback_data=f"done_{task.id}")]

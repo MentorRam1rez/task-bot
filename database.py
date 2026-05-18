@@ -197,3 +197,17 @@ class Database:
             cur.execute(
                 "UPDATE tasks SET status='overdue' WHERE status='active' AND deadline < NOW()"
             )
+
+    def get_all_users(self) -> List[int]:
+        with self.conn.cursor() as cur:
+            cur.execute("SELECT DISTINCT user_id FROM tasks")
+            return [row[0] for row in cur.fetchall()]
+
+    def get_tasks_by_priority(self, user_id: int, priority: str) -> List[Task]:
+        with self.conn.cursor() as cur:
+            cur.execute(
+                """SELECT * FROM tasks WHERE user_id=%s AND priority=%s AND status='active'
+                   ORDER BY deadline NULLS LAST""",
+                (user_id, priority),
+            )
+            return [self._row_to_task(r) for r in cur.fetchall()]

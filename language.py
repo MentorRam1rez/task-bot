@@ -18,7 +18,7 @@ TEXTS = {
         "task_not_found": "❌ Задачу не знайдено.",
         "task_already_done": "❌ Задачу вже виконана.",
         "no_deadline_tasks": "😌 Немає активних задач із дедлайном.",
-        "filter_hint": "Фільтр: active | done | overdue | all",
+        "filter_hint": "Фільтр: active | done | overdue | all | high | medium | low",
         "done_btn": "✅ Виконано #{id}",
         "no_deadline": "без дедлайну",
         "reminder_text": "⏰ *Нагадування!*\nЧерез ~1 годину дедлайн задачі:\n\n*#{id}* {text}\n📅 {deadline}",
@@ -36,6 +36,29 @@ TEXTS = {
         "days": ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"],
         "confirm_days": "✅ Підтвердити дні",
         "use_id": "Використання: /{cmd} `<id>`",
+        "morning_greeting": "🌅 Доброго ранку, {name}!\n\nЯкі на сьогодні плани? Не забудь перевірити свої задачі!\n\n/list — переглянути задачі\n/add — додати нову",
+        "help_title": (
+        "📖 *Команди для бота*\n\n"
+        "➕ *Додавання задач*\n"
+        "/add — додати нову задачу (текст, дедлайн, пріоритет, категорія, повторення)\n\n"
+        "📋 *Перегляд задач*\n"
+        "/list — активні задачі\n"
+        "/list done — виконані\n"
+        "/list overdue — прострочені\n"
+        "/list all — всі задачі\n"
+        "/list high — високий пріоритет 🔴\n"
+        "/list medium — середній пріоритет 🟡\n"
+        "/list low — низький пріоритет 🟢\n\n"
+        "✅ *Керування задачами*\n"
+        "/done `<id>` — позначити виконаною\n"
+        "/delete `<id>` — видалити задачу\n\n"
+        "⏰ *Нагадування*\n"
+        "/remind — задачі з дедлайном\n"
+        "Бот автоматично нагадує за 1 годину до дедлайну\n\n"
+        "/stats — статистика виконання\n"
+        "/lang — змінити мову\n"
+        "/help — панель керування\n\n"
+),
     },
     "en": {
         "welcome": "Hi, {name}! 👋 I'm your task management bot.\n\n📋 *Commands:*\n/add — add a task\n/list — all active tasks\n/list done — completed\n/list overdue — overdue\n/done `<id>` — mark as done\n/delete `<id>` — delete task\n/remind — tasks with deadlines\n/stats — statistics\n/lang — change language",
@@ -56,7 +79,7 @@ TEXTS = {
         "task_not_found": "❌ Task not found.",
         "task_already_done": "❌ Task already completed.",
         "no_deadline_tasks": "😌 No active tasks with deadlines.",
-        "filter_hint": "Filter: active | done | overdue | all",
+        "filter_hint": "Filter: active | done | overdue | all | high | medium | low",
         "done_btn": "✅ Done #{id}",
         "no_deadline": "no deadline",
         "reminder_text": "⏰ *Reminder!*\nDeadline in ~1 hour:\n\n*#{id}* {text}\n📅 {deadline}",
@@ -74,6 +97,29 @@ TEXTS = {
         "days": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
         "confirm_days": "✅ Confirm days",
         "use_id": "Usage: /{cmd} `<id>`",
+        "morning_greeting": "🌅 Good morning, {name}!\n\nWhat are your plans for today? Don't forget to check your tasks!\n\n/list — view tasks\n/add — add a new one",
+        "help_title": (
+        "📖 *Bot Help*\n\n"
+        "➕ *Adding tasks*\n"
+        "/add — add a new task (text, deadline, priority, category, repeat)\n\n"
+        "📋 *Viewing tasks*\n"
+        "/list — active tasks\n"
+        "/list done — completed\n"
+        "/list overdue — overdue\n"
+        "/list all — all tasks\n"
+        "/list high — high priority 🔴\n"
+        "/list medium — medium priority 🟡\n"
+        "/list low — low priority 🟢\n\n"
+        "✅ *Managing tasks*\n"
+        "/done `<id>` — mark as done\n"
+        "/delete `<id>` — delete task\n\n"
+        "⏰ *Reminders*\n"
+        "/remind — tasks with deadlines\n"
+        "Bot reminds automatically 1 hour before deadline\n\n"
+        "/stats — completion statistics\n"
+        "/lang — change language\n"
+        "/help — control panel\n\n"
+),
     }
 }
 

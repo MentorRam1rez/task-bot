@@ -6,7 +6,7 @@ from telegram.ext import (
 from config import BOT_TOKEN
 from database import Database
 from handlers import (
-    start_command, add_command, get_text, get_deadline,
+    start_command, help_command, add_command, get_text, get_deadline,
     get_priority, get_category, get_repeat, get_repeat_days,
     cancel_command, list_command, done_command, delete_command,
     remind_command, stats_command, lang_command, button_callback,
@@ -41,6 +41,7 @@ def main():
     )
 
     app.add_handler(CommandHandler("start", start_command))
+    app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("lang", lang_command))
     app.add_handler(CommandHandler("stats", stats_command))
     app.add_handler(conv)
