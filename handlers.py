@@ -4,7 +4,7 @@ from telegram.ext import ContextTypes, ConversationHandler
 import pytz
 from database import Database
 from language import t
-from ai_helper import classify_task, ai_chat, ai_analyze_tasks
+from ai_helper import classify_task, ai_chat_with_tools, ai_analyze_tasks
 
 db = Database()
 
@@ -343,7 +343,7 @@ async def ai_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
     await update.message.reply_text(
         f"🤖 {analysis}\n\n"
-        "_(напиши будь-яке питання або /aiend щоб завершити)_",
+        "_(напиши будь-яке питання, попроси додати чи видалити задачу, або /aiend щоб завершити)_",
         parse_mode="Markdown",
     )
     return AI_CHAT
@@ -352,21 +352,90 @@ async def ai_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 async def ai_chat_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_id = update.effective_user.id
     user_message = update.message.text
+    name = update.effective_user.first_name or "друже"
 
     db.save_ai_message(user_id, "user", user_message)
     history = db.get_ai_history(user_id)
     tasks = db.get_tasks(user_id, "active") + db.get_tasks(user_id, "overdue")
-    name = update.effective_user.first_name or "друже"
 
     await update.message.reply_text("💭 Думаю...")
 
-    response = ai_chat(user_message, history, tasks, name)
-    db.save_ai_message(user_id, "assistant", response)
+    result = ai_chat_with_tools(user_message, history, tasks, name)
 
-    await update.message.reply_text(
-        f"🤖 {response}\n\n_(або /aiend щоб завершити)_",
-        parse_mode="Markdown",
-    )
+    if result["type"] == "text":
+        response_text = result["text"]
+        db.save_ai_message(user_id, "assistant", response_text)
+        await update.message.reply_text(
+            f"🤖 {response_text}\n\n_(або /aiend щоб завершити)_",
+            parse_mode="Markdown",
+        )
+
+    elif result["type"] == "tool":
+        tool = result["tool"]
+        inp = result["input"]
+        pre_text = result.get("text", "")
+
+        if tool == "add_task":
+            deadline = None
+            if inp.get("deadline") and inp["deadline"] != "null":
+                try:
+                    deadline = datetime.strptime(inp["deadline"], "%d.%m.%Y %H:%M")
+                    tz = pytz.timezone("Europe/Kyiv")
+                    deadline = tz.localize(deadline).astimezone(pytz.utc)
+                except Exception:
+                    deadline = None
+
+            task_id = db.add_task(
+                user_id=user_id,
+                text=inp["text"],
+                deadline=deadline,
+                priority=inp.get("priority", "medium"),
+                category=inp.get("category", "personal"),
+            )
+            response_text = (
+                f"{pre_text}\n\n✅ Задачу *#{task_id}* «{inp['text']}» додано!"
+                if pre_text else
+                f"✅ Задачу *#{task_id}* «{inp['text']}» додано!"
+            )
+
+        elif tool == "delete_task":
+            task_id = inp["task_id"]
+            success = db.delete_task(user_id, task_id)
+            response_text = (
+                f"🗑 Задачу *#{task_id}* видалено!"
+                if success else
+                f"❌ Задачу *#{task_id}* не знайдено."
+            )
+
+        elif tool == "mark_task_done":
+            task_id = inp["task_id"]
+            success = db.mark_done(user_id, task_id)
+            response_text = (
+                f"✅ Задачу *#{task_id}* виконано!"
+                if success else
+                f"❌ Задачу *#{task_id}* не знайдено."
+            )
+
+        elif tool == "get_tasks":
+            status = inp.get("status", "active")
+            task_list = db.get_tasks(user_id, status)
+            if not task_list:
+                response_text = "😌 Задач не знайдено."
+            else:
+                lines = [
+                    f"{STATUS_ICON.get(t.status, '⬜')}{PRIORITY_ICON.get(t.priority, '🟡')} *#{t.id}* {t.text} — {t.deadline.strftime('%d.%m %H:%M') if t.deadline else '—'}"
+                    for t in task_list
+                ]
+                response_text = "\n".join(lines)
+        else:
+            response_text = "Готово!"
+
+        db.save_ai_message(user_id, "assistant", response_text)
+        await update.message.reply_text(
+            f"🤖 {response_text}\n\n_(або /aiend щоб завершити)_",
+            parse_mode="Markdown",
+        )
+
     return AI_CHAT
 
 

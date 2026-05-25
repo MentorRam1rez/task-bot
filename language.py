@@ -1,6 +1,6 @@
 TEXTS = {
     "uk": {
-        "welcome": "Привіт, {name}! 👋 Я бот для управління твоїми задачами.\n\n📋 *Команди:*\n/add — додати задачу\n/list — всі активні задачі\n/list done — виконані\n/list overdue — прострочені\n/done `<id>` — позначити виконаною\n/delete `<id>` — видалити задачу\n/remind — задачі з дедлайном\n/stats — статистика\n/lang — змінити мову",
+        "welcome": "Привіт, {name}! 👋 Я бот для управління твоїми задачами.\n\n📋 *Команди:*\n/add — додати задачу\n/list — всі активні задачі\n/list done — виконані\n/list overdue — прострочені\n/done `<id>` — позначити виконаною\n/delete `<id>` — видалити задачу\n/remind — задачі з дедлайном\n/stats — статистика\n/lang — змінити мову\n/ai — AI-помічник\n/help — довідка",
         "choose_lang": "🌍 Оберіть мову / Choose language:",
         "lang_set": "✅ Мову встановлено: Українська 🇺🇦",
         "enter_text": "✏️ Введи текст задачі:",
@@ -16,7 +16,7 @@ TEXTS = {
         "task_done": "✅ Задачу *#{id}* виконано!",
         "task_deleted": "🗑 Задачу *#{id}* видалено.",
         "task_not_found": "❌ Задачу не знайдено.",
-        "task_already_done": "❌ Задачу вже виконана.",
+        "task_already_done": "❌ Задачу не знайдено або вона вже виконана.",
         "no_deadline_tasks": "😌 Немає активних задач із дедлайном.",
         "filter_hint": "Фільтр: active | done | overdue | all | high | medium | low",
         "done_btn": "✅ Виконано #{id}",
@@ -38,30 +38,37 @@ TEXTS = {
         "use_id": "Використання: /{cmd} `<id>`",
         "morning_greeting": "🌅 Доброго ранку, {name}!\n\nЯкі на сьогодні плани? Не забудь перевірити свої задачі!\n\n/list — переглянути задачі\n/add — додати нову",
         "help_title": (
-        "📖 *Команди для бота*\n\n"
-        "➕ *Додавання задач*\n"
-        "/add — додати нову задачу (текст, дедлайн, пріоритет, категорія, повторення)\n\n"
-        "📋 *Перегляд задач*\n"
-        "/list — активні задачі\n"
-        "/list done — виконані\n"
-        "/list overdue — прострочені\n"
-        "/list all — всі задачі\n"
-        "/list high — високий пріоритет 🔴\n"
-        "/list medium — середній пріоритет 🟡\n"
-        "/list low — низький пріоритет 🟢\n\n"
-        "✅ *Керування задачами*\n"
-        "/done `<id>` — позначити виконаною\n"
-        "/delete `<id>` — видалити задачу\n\n"
-        "⏰ *Нагадування*\n"
-        "/remind — задачі з дедлайном\n"
-        "Бот автоматично нагадує за 1 годину до дедлайну\n\n"
-        "/stats — статистика виконання\n"
-        "/lang — змінити мову\n"
-        "/help — панель керування\n\n"
-),
+            "📖 *Довідка по боту*\n\n"
+            "➕ *Додавання задач*\n"
+            "/add — додати нову задачу (текст, дедлайн, пріоритет, категорія, повторення)\n\n"
+            "📋 *Перегляд задач*\n"
+            "/list — активні задачі\n"
+            "/list done — виконані\n"
+            "/list overdue — прострочені\n"
+            "/list all — всі задачі\n"
+            "/list high — високий пріоритет 🔴\n"
+            "/list medium — середній пріоритет 🟡\n"
+            "/list low — низький пріоритет 🟢\n\n"
+            "✅ *Керування задачами*\n"
+            "/done `<id>` — позначити виконаною\n"
+            "/delete `<id>` — видалити задачу\n\n"
+            "⏰ *Нагадування*\n"
+            "/remind — задачі з дедлайном\n"
+            "Бот автоматично нагадує за 1 годину до дедлайну\n\n"
+            "🤖 *AI-асистент*\n"
+            "/ai — запустити AI-помічника\n"
+            "AI аналізує твої задачі і дає поради.\n"
+            "Просто напиши йому:\n"
+            "/aiend — завершити розмову з AI\n\n"
+            "📊 *Інше*\n"
+            "/stats — статистика виконання\n"
+            "/lang — змінити мову\n"
+            "/help — ця довідка\n\n"
+            "💡 *Підказка:* Після /add бот проведе тебе крок за кроком!"
+        ),
     },
     "en": {
-        "welcome": "Hi, {name}! 👋 I'm your task management bot.\n\n📋 *Commands:*\n/add — add a task\n/list — all active tasks\n/list done — completed\n/list overdue — overdue\n/done `<id>` — mark as done\n/delete `<id>` — delete task\n/remind — tasks with deadlines\n/stats — statistics\n/lang — change language",
+        "welcome": "Hi, {name}! 👋 I'm your task management bot.\n\n📋 *Commands:*\n/add — add a task\n/list — all active tasks\n/list done — completed\n/list overdue — overdue\n/done `<id>` — mark as done\n/delete `<id>` — delete task\n/remind — tasks with deadlines\n/stats — statistics\n/lang — change language\n/ai — AI assistant\n/help — help",
         "choose_lang": "🌍 Оберіть мову / Choose language:",
         "lang_set": "✅ Language set: English 🇬🇧",
         "enter_text": "✏️ Enter task text:",
@@ -77,7 +84,7 @@ TEXTS = {
         "task_done": "✅ Task *#{id}* marked as done!",
         "task_deleted": "🗑 Task *#{id}* deleted.",
         "task_not_found": "❌ Task not found.",
-        "task_already_done": "❌ Task already completed.",
+        "task_already_done": "❌ Task not found or already completed.",
         "no_deadline_tasks": "😌 No active tasks with deadlines.",
         "filter_hint": "Filter: active | done | overdue | all | high | medium | low",
         "done_btn": "✅ Done #{id}",
@@ -99,27 +106,34 @@ TEXTS = {
         "use_id": "Usage: /{cmd} `<id>`",
         "morning_greeting": "🌅 Good morning, {name}!\n\nWhat are your plans for today? Don't forget to check your tasks!\n\n/list — view tasks\n/add — add a new one",
         "help_title": (
-        "📖 *Bot Help*\n\n"
-        "➕ *Adding tasks*\n"
-        "/add — add a new task (text, deadline, priority, category, repeat)\n\n"
-        "📋 *Viewing tasks*\n"
-        "/list — active tasks\n"
-        "/list done — completed\n"
-        "/list overdue — overdue\n"
-        "/list all — all tasks\n"
-        "/list high — high priority 🔴\n"
-        "/list medium — medium priority 🟡\n"
-        "/list low — low priority 🟢\n\n"
-        "✅ *Managing tasks*\n"
-        "/done `<id>` — mark as done\n"
-        "/delete `<id>` — delete task\n\n"
-        "⏰ *Reminders*\n"
-        "/remind — tasks with deadlines\n"
-        "Bot reminds automatically 1 hour before deadline\n\n"
-        "/stats — completion statistics\n"
-        "/lang — change language\n"
-        "/help — control panel\n\n"
-),
+            "📖 *Bot Help*\n\n"
+            "➕ *Adding tasks*\n"
+            "/add — add a new task (text, deadline, priority, category, repeat)\n\n"
+            "📋 *Viewing tasks*\n"
+            "/list — active tasks\n"
+            "/list done — completed\n"
+            "/list overdue — overdue\n"
+            "/list all — all tasks\n"
+            "/list high — high priority 🔴\n"
+            "/list medium — medium priority 🟡\n"
+            "/list low — low priority 🟢\n\n"
+            "✅ *Managing tasks*\n"
+            "/done `<id>` — mark as done\n"
+            "/delete `<id>` — delete task\n\n"
+            "⏰ *Reminders*\n"
+            "/remind — tasks with deadlines\n"
+            "Bot reminds automatically 1 hour before deadline\n\n"
+            "🤖 *AI Assistant*\n"
+            "/ai — launch AI assistant\n"
+            "AI analyzes your tasks and gives advice.\n"
+            "Just write:\n"
+            "/aiend — end conversation with AI\n\n"
+            "📊 *Other*\n"
+            "/stats — completion statistics\n"
+            "/lang — change language\n"
+            "/help — this help\n\n"
+            "💡 *Tip:* After /add the bot will guide you step by step!"
+        ),
     }
 }
 
