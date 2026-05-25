@@ -143,7 +143,7 @@ class Database:
     def mark_done(self, user_id: int, task_id: int) -> bool:
         with self.conn.cursor() as cur:
             cur.execute(
-                "UPDATE tasks SET status='done' WHERE id=%s AND user_id=%s AND status='active'",
+                "UPDATE tasks SET status='done' WHERE id=%s AND user_id=%s AND status IN ('active', 'overdue')",
                 (task_id, user_id),
             )
             return cur.rowcount > 0
