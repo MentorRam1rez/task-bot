@@ -4,11 +4,11 @@ from telegram.ext import ContextTypes, ConversationHandler
 import pytz
 from database import Database
 from language import t
-from ai_helper import classify_task
+from ai_helper import classify_task, ai_chat, ai_analyze_tasks
 
 db = Database()
 
-TEXT, DEADLINE, PRIORITY, CATEGORY, REPEAT, REPEAT_DAYS = range(6)
+TEXT, DEADLINE, PRIORITY, CATEGORY, REPEAT, REPEAT_DAYS, AI_CHAT = range(7)
 
 STATUS_ICON = {"active": "🔵", "done": "✅", "overdue": "🔴"}
 PRIORITY_ICON = {"high": "🔴", "medium": "🟡", "low": "🟢"}
@@ -18,8 +18,8 @@ CATEGORY_ICON = {"work": "💼", "study": "📚", "personal": "🏠", None: "�
 def lang(user_id: int) -> str:
     return db.get_language(user_id)
 
-#/start
 
+# /start
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     l = lang(user.id)
@@ -28,13 +28,14 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown",
     )
 
-#/help
 
+# /help
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     l = lang(update.effective_user.id)
     await update.message.reply_text(t(l, "help_title"), parse_mode="Markdown")
-#/lang
 
+
+# /lang
 async def lang_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     l = lang(update.effective_user.id)
     keyboard = InlineKeyboardMarkup([
@@ -45,8 +46,8 @@ async def lang_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ])
     await update.message.reply_text(t(l, "choose_lang"), reply_markup=keyboard)
 
-#/add
 
+# /add
 async def add_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     l = lang(update.effective_user.id)
     await update.message.reply_text(t(l, "enter_text"))
@@ -89,10 +90,8 @@ async def get_priority(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     query = update.callback_query
     await query.answer()
     l = lang(query.from_user.id)
-
     priority = query.data.replace("priority_", "")
     context.user_data["priority"] = priority
-
     keyboard = InlineKeyboardMarkup([
         [
             InlineKeyboardButton(t(l, "category_work"), callback_data="cat_work"),
@@ -111,10 +110,8 @@ async def get_category(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     query = update.callback_query
     await query.answer()
     l = lang(query.from_user.id)
-
     category = query.data.replace("cat_", "")
     context.user_data["category"] = None if category == "none" else category
-
     keyboard = InlineKeyboardMarkup([
         [
             InlineKeyboardButton(t(l, "repeat_none"), callback_data="repeat_none"),
@@ -132,9 +129,7 @@ async def get_repeat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     await query.answer()
     l = lang(query.from_user.id)
-
     repeat = query.data.replace("repeat_", "")
-
     if repeat == "none":
         context.user_data["repeat_type"] = None
         context.user_data["repeat_days"] = None
@@ -159,12 +154,10 @@ async def get_repeat_days(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     query = update.callback_query
     await query.answer()
     l = lang(query.from_user.id)
-
     if query.data == "days_confirm":
         days = context.user_data.get("repeat_days", [])
         context.user_data["repeat_days"] = ",".join(map(str, days))
         return await _save_task(query, context, l)
-
     day = int(query.data.replace("day_", ""))
     days = context.user_data.get("repeat_days", [])
     if day in days:
@@ -172,7 +165,6 @@ async def get_repeat_days(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     else:
         days.append(day)
     context.user_data["repeat_days"] = days
-
     day_names = t(l, "days")
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton(
@@ -196,12 +188,12 @@ async def _save_task(query, context, l: str) -> int:
     repeat_type = context.user_data.get("repeat_type")
     repeat_days = context.user_data.get("repeat_days")
 
-    if not context.user_data.get("priority") or not context.user_data.get("category"):
+    if not priority or not category:
         classification = classify_task(context.user_data["task_text"])
-        if not context.user_data.get("priority"):
-            context.user_data["priority"] = classification["priority"]
-        if not context.user_data.get("category"):
-            context.user_data["category"] = classification["category"]
+        if not priority:
+            priority = classification["priority"]
+        if not category:
+            category = classification["category"]
 
     task_id = db.add_task(
         user_id=user_id,
@@ -213,8 +205,17 @@ async def _save_task(query, context, l: str) -> int:
         repeat_days=repeat_days if isinstance(repeat_days, str) else None,
     )
 
-    priority_labels = {"high": t(l, "priority_high"), "medium": t(l, "priority_medium"), "low": t(l, "priority_low")}
-    category_labels = {"work": t(l, "category_work"), "study": t(l, "category_study"), "personal": t(l, "category_personal"), None: t(l, "category_none")}
+    priority_labels = {
+        "high": t(l, "priority_high"),
+        "medium": t(l, "priority_medium"),
+        "low": t(l, "priority_low")
+    }
+    category_labels = {
+        "work": t(l, "category_work"),
+        "study": t(l, "category_study"),
+        "personal": t(l, "category_personal"),
+        None: t(l, "category_none")
+    }
 
     dl_str = deadline.strftime("%d.%m.%Y %H:%M") if deadline else t(l, "no_deadline")
     await query.edit_message_text(
@@ -231,13 +232,12 @@ async def cancel_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     await update.message.reply_text(t(l, "cancelled"))
     return ConversationHandler.END
 
-#/list
 
+# /list
 async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     l = lang(user_id)
     filter_arg = context.args[0] if context.args else "active"
-
     valid_status = {"active", "done", "overdue", "all"}
     valid_priority = {"high", "medium", "low"}
 
@@ -269,15 +269,14 @@ async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         for task in tasks if task.status == "active"
     ]
     reply_markup = InlineKeyboardMarkup(keyboard) if keyboard else None
-
     await update.message.reply_text(
         "\n\n".join(lines),
         reply_markup=reply_markup,
         parse_mode="Markdown",
     )
 
-#/done
 
+# /done
 async def done_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     l = lang(user_id)
@@ -290,8 +289,8 @@ async def done_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text(t(l, "task_already_done"))
 
-#/delete
 
+# /delete
 async def delete_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     l = lang(user_id)
@@ -304,8 +303,8 @@ async def delete_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text(t(l, "task_not_found"))
 
-#/remind
 
+# /remind
 async def remind_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     l = lang(user_id)
@@ -319,8 +318,8 @@ async def remind_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
     await update.message.reply_text("\n\n".join(lines), parse_mode="Markdown")
 
-#/stats
 
+# /stats
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     l = lang(user_id)
@@ -330,8 +329,55 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown",
     )
 
-#Callback
 
+# /ai
+async def ai_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    user_id = update.effective_user.id
+    await update.message.reply_text("🤔 Аналізую твої задачі...")
+
+    tasks = db.get_tasks(user_id, "active") + db.get_tasks(user_id, "overdue")
+    name = update.effective_user.first_name or "друже"
+
+    analysis = ai_analyze_tasks(tasks, name)
+    db.save_ai_message(user_id, "assistant", analysis)
+
+    await update.message.reply_text(
+        f"🤖 {analysis}\n\n"
+        "_(напиши будь-яке питання або /aiend щоб завершити)_",
+        parse_mode="Markdown",
+    )
+    return AI_CHAT
+
+
+async def ai_chat_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    user_id = update.effective_user.id
+    user_message = update.message.text
+
+    db.save_ai_message(user_id, "user", user_message)
+    history = db.get_ai_history(user_id)
+    tasks = db.get_tasks(user_id, "active") + db.get_tasks(user_id, "overdue")
+    name = update.effective_user.first_name or "друже"
+
+    await update.message.reply_text("💭 Думаю...")
+
+    response = ai_chat(user_message, history, tasks, name)
+    db.save_ai_message(user_id, "assistant", response)
+
+    await update.message.reply_text(
+        f"🤖 {response}\n\n_(або /aiend щоб завершити)_",
+        parse_mode="Markdown",
+    )
+    return AI_CHAT
+
+
+async def ai_end_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    user_id = update.effective_user.id
+    db.clear_ai_history(user_id)
+    await update.message.reply_text("👋 Гарно поспілкувались! Якщо що — /ai завжди до послуг.")
+    return ConversationHandler.END
+
+
+# Callback
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     l = lang(query.from_user.id)

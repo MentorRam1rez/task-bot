@@ -54,6 +54,15 @@ class Database:
                     language TEXT NOT NULL DEFAULT 'uk'
                 );
 
+                CREATE TABLE IF NOT EXISTS ai_history (
+                    id         SERIAL PRIMARY KEY,
+                    user_id    BIGINT NOT NULL,
+                    role       TEXT NOT NULL,
+                    content    TEXT NOT NULL,
+                    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+                );
+                CREATE INDEX IF NOT EXISTS idx_ai_history_user ON ai_history(user_id);
+
                 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS priority TEXT NOT NULL DEFAULT 'medium';
                 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS category TEXT DEFAULT NULL;
                 ALTER TABLE tasks ADD COLUMN IF NOT EXISTS repeat_type TEXT DEFAULT NULL;
@@ -173,9 +182,7 @@ class Database:
 
     def get_repeating_tasks(self) -> List[Task]:
         with self.conn.cursor() as cur:
-            cur.execute(
-                "SELECT * FROM tasks WHERE status='done' AND repeat_type IS NOT NULL"
-            )
+            cur.execute("SELECT * FROM tasks WHERE status='done' AND repeat_type IS NOT NULL")
             return [self._row_to_task(r) for r in cur.fetchall()]
 
     def reset_repeating_task(self, task_id: int, new_deadline: datetime):
@@ -211,3 +218,24 @@ class Database:
                 (user_id, priority),
             )
             return [self._row_to_task(r) for r in cur.fetchall()]
+
+    def save_ai_message(self, user_id: int, role: str, content: str):
+        with self.conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO ai_history (user_id, role, content) VALUES (%s, %s, %s)",
+                (user_id, role, content),
+            )
+
+    def get_ai_history(self, user_id: int, limit: int = 10) -> list:
+        with self.conn.cursor() as cur:
+            cur.execute(
+                """SELECT role, content FROM ai_history
+                   WHERE user_id=%s ORDER BY created_at DESC LIMIT %s""",
+                (user_id, limit),
+            )
+            rows = cur.fetchall()
+            return [{"role": r[0], "content": r[1]} for r in reversed(rows)]
+
+    def clear_ai_history(self, user_id: int):
+        with self.conn.cursor() as cur:
+            cur.execute("DELETE FROM ai_history WHERE user_id=%s", (user_id,))

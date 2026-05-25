@@ -10,7 +10,8 @@ from handlers import (
     get_priority, get_category, get_repeat, get_repeat_days,
     cancel_command, list_command, done_command, delete_command,
     remind_command, stats_command, lang_command, button_callback,
-    TEXT, DEADLINE, PRIORITY, CATEGORY, REPEAT, REPEAT_DAYS,
+    ai_command, ai_chat_handler, ai_end_command,
+    TEXT, DEADLINE, PRIORITY, CATEGORY, REPEAT, REPEAT_DAYS, AI_CHAT,
 )
 from scheduler import setup_scheduler
 
@@ -40,11 +41,23 @@ def main():
         fallbacks=[CommandHandler("cancel", cancel_command)],
     )
 
+    ai_conv = ConversationHandler(
+        entry_points=[CommandHandler("ai", ai_command)],
+        states={
+            AI_CHAT: [
+                MessageHandler(filters.TEXT & ~filters.COMMAND, ai_chat_handler),
+            ],
+        },
+        fallbacks=[CommandHandler("aiend", ai_end_command)],
+    )
+
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("lang", lang_command))
     app.add_handler(CommandHandler("stats", stats_command))
+    app.add_handler(CommandHandler("aiend", ai_end_command))
     app.add_handler(conv)
+    app.add_handler(ai_conv)
     app.add_handler(CommandHandler("list", list_command))
     app.add_handler(CommandHandler("done", done_command))
     app.add_handler(CommandHandler("delete", delete_command))
