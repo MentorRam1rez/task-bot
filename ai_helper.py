@@ -6,7 +6,7 @@ client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
 def _ask(prompt: str) -> str:
     message = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-haiku-4-5-20251001",
         max_tokens=500,
         messages=[{"role": "user", "content": prompt}]
     )
@@ -157,7 +157,7 @@ def ai_chat(user_message: str, history: list, tasks: list, name: str) -> str:
 
     try:
         response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-haiku-4-5-20251001",
             max_tokens=600,
             system=system_prompt,
             messages=messages,
