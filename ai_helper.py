@@ -1,10 +1,12 @@
 import os
 import json
 import anthropic
+from datetime import datetime
+import pytz
 
 client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
-MODEL = "claude-haiku-4-5-20251001"
+MODEL = "claude-haiku-4-5"
 
 TOOLS = [
     {
@@ -77,7 +79,16 @@ TOOLS = [
             },
             "required": []
         }
-    }
+    },
+    {
+        "name": "delete_overdue_tasks",
+        "description": "Delete all overdue tasks / Видалити всі прострочені задачі",
+        "input_schema": {
+            "type": "object",
+            "properties": {},
+            "required": []
+        }
+    },
 ]
 
 
@@ -230,6 +241,9 @@ def ai_analyze_tasks(tasks: list, name: str) -> str:
 
 
 def ai_chat_with_tools(user_message: str, history: list, tasks: list, name: str) -> dict:
+    tz = pytz.timezone("Europe/Kyiv")
+    now = datetime.now(tz).strftime("%d.%m.%Y %H:%M")
+
     if tasks:
         active = [t for t in tasks if t.status == "active"]
         overdue = [t for t in tasks if t.status == "overdue"]
@@ -250,21 +264,36 @@ def ai_chat_with_tools(user_message: str, history: list, tasks: list, name: str)
     system_prompt = f"""You are a friendly AI assistant for task management in a Telegram bot.
 Your name is Assistant. You are talking to {name}.
 
+CURRENT TIME IN UKRAINE (Kyiv): {now}
+When user says "in 30 minutes", "in 1 hour", "tomorrow", "tonight", "через 30 хвилин", "завтра" etc — calculate the exact deadline based on this current time.
+
 {tasks_context}
 
 IMPORTANT LANGUAGE RULE:
 - If the user writes in Ukrainian — respond in Ukrainian
 - If the user writes in English — respond in English
-- Always detect the language of the user's message and respond in the same language
+
+PRIORITY RULES (very important):
+- Use "high" ONLY if user explicitly says "терміново", "важливо", "urgent", "important", "критично"
+- Use "low" if user says "не терміново", "колись", "not urgent", "низький"
+- Use "medium" as DEFAULT for everything else — if user does not mention priority, always use "medium"
+
+SHORTCUT COMMANDS:
+- "+" or "+ task text" — add a new task
+- "-N" or "- #N" — delete task with ID N
+- "видали всі прострочені" or "delete all overdue" — delete all overdue tasks
+- "готово N" or "done N" — mark task N as done
+- "покажи задачі" or "show tasks" — get task list
 
 You can:
-- Give advice about tasks / Давати поради щодо задач
+- Give advice about tasks
 - Add new tasks using add_task tool
 - Delete tasks using delete_task tool
 - Mark tasks as done using mark_task_done tool
 - Show task list using get_tasks tool
+- Delete all overdue tasks using delete_overdue_tasks tool
 
-If the user asks to add/delete/complete a task — use the appropriate tool.
+If the user asks to add/delete/complete a task — use the appropriate tool immediately.
 Communication style: friendly, casual, like a friend, brief (max 4-5 sentences)."""
 
     messages = history + [{"role": "user", "content": user_message}]
