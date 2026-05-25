@@ -4,7 +4,7 @@ from telegram.ext import ContextTypes, ConversationHandler
 import pytz
 from database import Database
 from language import t
-
+from ai_helper import classify_task
 
 db = Database()
 
@@ -195,6 +195,13 @@ async def _save_task(query, context, l: str) -> int:
     category = context.user_data.get("category")
     repeat_type = context.user_data.get("repeat_type")
     repeat_days = context.user_data.get("repeat_days")
+
+    if not context.user_data.get("priority") or not context.user_data.get("category"):
+        classification = classify_task(context.user_data["task_text"])
+        if not context.user_data.get("priority"):
+            context.user_data["priority"] = classification["priority"]
+        if not context.user_data.get("category"):
+            context.user_data["category"] = classification["category"]
 
     task_id = db.add_task(
         user_id=user_id,
